@@ -1,33 +1,44 @@
-name: Android APK Build
+name: Android APK Builder
 on:
   push:
     branches: [ main ]
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-20.04
+    timeout-minutes: 30  # Buildozer often needs more time
+
     steps:
+      # ======================
+      # 1. SETUP ENVIRONMENT
+      # ======================
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install system dependencies
+      # ======================
+      # 2. INSTALL DEPENDENCIES
+      # ======================
+      - name: Install system packages
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y \
             python3-pip python3-venv build-essential \
             cython3 libffi-dev openssl-dev \
-            zlib1g-dev autoconf automake
+            zlib1g-dev autoconf automake libssl-dev
 
-      - name: Install Python dependencies
+      - name: Install Python tools
         run: |
           python -m pip install --upgrade pip wheel setuptools
-          pip install buildozer cython virtualenv
+          pip install buildozer cython==0.29.33 virtualenv
 
+      # ======================
+      # 3. BUILD CONFIGURATION
+      # ======================
       - name: Initialize Buildozer (if needed)
         run: |
           if [ ! -f "buildozer.spec" ]; then
@@ -35,21 +46,31 @@ jobs:
             echo "Created new buildozer.spec"
           else
             echo "Using existing buildozer.spec"
+            cat buildozer.spec
           fi
 
-      - name: Show environment info
+      # ======================
+      # 4. BUILD APK
+      # ======================
+      - name: Build Android APK
         run: |
-          python --version
-          pip list
-          buildozer --version
-
-      - name: Build APK
-        run: |
+          echo "=== STARTING APK BUILD ==="
           buildozer -v android debug 2>&1 | tee build.log
-          
-      - name: Upload build log
+          echo "=== BUILD COMPLETE ==="
+
+      # ======================
+      # 5. ARTIFACT HANDLING
+      # ======================
+      - name: Upload APK artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug
+          path: bin/*.apk
+
+      - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: build-log
+          name: build-logs
           path: build.log
