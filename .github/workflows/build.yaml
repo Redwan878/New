@@ -13,24 +13,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'  # Specify exact version instead of '3.x'
+          python-version: '3.9'
 
       - name: Get current date
         id: get-date
         run: |
           echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
 
-      - name: Cache Buildozer global
+      - name: Cache Buildozer
         uses: actions/cache@v3
         with:
           path: |
             ~/.buildozer
             .buildozer
           key: ${{ runner.os }}-buildozer-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-buildozer-
 
-      - name: Install Buildozer dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip python3-venv build-essential
@@ -40,5 +38,7 @@ jobs:
 
       - name: Build APK
         run: |
-          buildozer init  # Only if you don't have buildozer.spec
+          if [ ! -f "buildozer.spec" ]; then
+            buildozer init
+          fi
           buildozer -v android debug
