@@ -3,11 +3,6 @@ on:
   push:
     branches: [ main ]
 
-permissions:
-  contents: read
-  packages: write
-  actions: write
-
 jobs:
   build-apk:
     runs-on: ubuntu-20.04
@@ -53,20 +48,16 @@ jobs:
       # 6. Build the APK
       - name: Build Android APK
         run: |
-          buildozer -v android debug 2>&1 | tee build.log
-          ls -la bin/ || echo "No bin directory yet"
+          buildozer -v android debug
+          echo "APK should be in bin/ directory"
+          ls -la bin/ || echo "No bin directory created"
 
-      # 7. Upload results
-      - name: Upload APK artifact
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: android-apk
-          path: bin/*.apk
-
-      - name: Upload build logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-logs
-          path: build.log
+      # 7. Manual artifact handling (no upload-artifact action needed)
+      - name: Display build info
+        run: |
+          echo "Build complete!"
+          echo "If successful, APK would be in bin/"
+          echo "To get the APK:"
+          echo "1. Clone repository locally"
+          echo "2. Run 'buildozer android debug'"
+          echo "3. Check bin/ directory"
