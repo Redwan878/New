@@ -19,14 +19,14 @@ jobs:
         with:
           python-version: '3.9'
 
-      # 3. Install system dependencies
+      # 3. Install system dependencies (FIXED openssl package name)
       - name: Install required packages
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y \
             python3-pip python3-venv build-essential \
-            cython3 libffi-dev openssl-dev \
-            zlib1g-dev autoconf automake libssl-dev \
+            cython3 libffi-dev libssl-dev \
+            zlib1g-dev autoconf automake \
             git unzip openjdk-11-jdk
 
       # 4. Set up Python environment
@@ -48,16 +48,16 @@ jobs:
       # 6. Build the APK
       - name: Build Android APK
         run: |
-          buildozer -v android debug
-          echo "APK should be in bin/ directory"
+          buildozer -v android debug 2>&1 | tee build.log
           ls -la bin/ || echo "No bin directory created"
 
-      # 7. Manual artifact handling (no upload-artifact action needed)
+      # 7. Show build status
       - name: Display build info
         run: |
-          echo "Build complete!"
-          echo "If successful, APK would be in bin/"
-          echo "To get the APK:"
-          echo "1. Clone repository locally"
-          echo "2. Run 'buildozer android debug'"
-          echo "3. Check bin/ directory"
+          if [ -f "bin/*.apk" ]; then
+            echo "APK built successfully!"
+            echo "Download the repository to access bin/ directory"
+          else
+            echo "Build may have failed - check logs above"
+            cat build.log | grep -i error || echo "No errors detected"
+          fi
