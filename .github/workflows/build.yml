@@ -2,30 +2,38 @@ name: CI
 on:
   push:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Get Date
+      - name: Checkout code
+        uses: actions/checkout@v3  # Updated to v3
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'  # Specify your Python version
+        
+      - name: Get current date
         id: get-date
         run: |
-          echo "date=$(/bin/date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-        shell: bash
+          echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
         
-      - name: Cache Buildozer global directory
-        uses: actions/cache@v2
+      - name: Cache Buildozer global
+        uses: actions/cache@v3  # Updated to v3
         with:
-          path: .buildozer_global
-          key: buildozer-global-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          
-      - name: Cache Buildozer directory
-        uses: actions/cache@v2
-        with:
-          path: .buildozer
-          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
-          
-      - name: Build with Buildozer
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: ${{ runner.os }}-buildozer-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+        
+      - name: Install Buildozer
+        run: pip install buildozer
+        
+      - name: Build APK
         run: |
-          # Your build commands here
+          buildozer android debug
+          # or buildozer -v android release if you want release build
