@@ -8,20 +8,20 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  # Updated to v3
-        
+        uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'  # Specify your Python version
-        
+          python-version: '3.9'  # Specify exact version instead of '3.x'
+
       - name: Get current date
         id: get-date
         run: |
           echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
-        
+
       - name: Cache Buildozer global
-        uses: actions/cache@v3  # Updated to v3
+        uses: actions/cache@v3
         with:
           path: |
             ~/.buildozer
@@ -29,11 +29,16 @@ jobs:
           key: ${{ runner.os }}-buildozer-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
             ${{ runner.os }}-buildozer-
-        
+
+      - name: Install Buildozer dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-venv build-essential
+
       - name: Install Buildozer
         run: pip install buildozer
-        
+
       - name: Build APK
         run: |
-          buildozer android debug
-          # or buildozer -v android release if you want release build
+          buildozer init  # Only if you don't have buildozer.spec
+          buildozer -v android debug
